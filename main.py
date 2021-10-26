@@ -67,6 +67,8 @@ def validate_field_name(target_field,seed_field):
         for field in target_field:
             if field not in seed_field:
                 st.write(f"{field} not found in SEED table. Please check and try again.")
+                st.write(target_field)
+                st.write(seed_field)
                 return False
         
     return True
