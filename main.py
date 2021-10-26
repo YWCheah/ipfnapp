@@ -234,7 +234,7 @@ with file_container:
     uploaded_file = st.file_uploader("Choose an excel file",type="xlsx")
     
     if uploaded_file is not None:
-        full_file_path = os.path.join(fr"{file_path}",uploaded_file.name)
+        full_file_path = os.path.join(file_path,uploaded_file.name).replace("/",r"\\")
         if os.path.exists(full_file_path):
             st.write(full_file_path)
         else:
