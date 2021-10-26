@@ -41,6 +41,7 @@ def get_number_of_field(df):
             if column == "Year":
                 i+=1
             else:
+                int(column)
                 pd.to_numeric(df[column])
                 if i != 0:
                     break
