@@ -8,6 +8,7 @@ Created on Thu Oct 21 15:36:04 2021
 import streamlit as st
 import pandas as pd
 from ipfn import ipfn
+import os
 
 st.title("IPFN Application")
 file_container = st.container()
@@ -179,13 +180,17 @@ def generate_results(df_seed,df_A,df_B):
     dimensions = [list(df_A.index.names),list(df_B.index.names)]
     
     with result_container:
-        convergence_rate = st.number_input("Convergence rate",value=1e-5,step=1e-5,format="%.f",key="conv")
-        rate_tolerance = st.number_input("Tolerance rate",value=1e-8,step=1e-8,format="%.f",key="tol")
-        max_iteration = st.number_input("Maximum iteration",step=1,value=500,key="iter")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            convergence_rate = st.number_input("Convergence rate",value=1e-5,step=1e-5,format="%.f",key="conv")
+        with col2:
+            rate_tolerance = st.number_input("Tolerance rate",value=1e-8,step=1e-8,format="%.f",key="tol")
+        with col3:
+            max_iteration = st.number_input("Maximum iteration",step=1,value=500,key="iter")
         
         if st.button("Generate Results"):
-            
-            st.write(df_seed)
+
             IPF = ipfn.ipfn(df_seed, aggregates, dimensions,weight_col=0,verbose=2,
                             convergence_rate=convergence_rate,rate_tolerance=rate_tolerance,max_iteration=max_iteration)
             df,flag,df_iteration = IPF.iteration()
@@ -195,60 +200,58 @@ def generate_results(df_seed,df_A,df_B):
             iteration = max(df_iteration.index)
             conv_rate = df_iteration.iat[iteration,0]
             
+            st.session_state.iteration = iteration
+            st.session_state.conv_rate = conv_rate
+            
             st.write(f"Number of Iteration: {iteration+1}")
             st.write(f"Convergence rate: {conv_rate}")
+            st.write("Saving results...")
             
-            return df
-    
-# if "df_seed" not in st.session_state:
-#     st.session_state.df_seed = None
+            writer = pd.ExcelWriter(full_file_path,engine='openpyxl',mode='a',
+                            if_sheet_exists='new')
+            df.to_excel(writer,sheet_name = 'Results',index=False,engine='openpyxl')
+            writer.close()
+            
+            st.write(f"Results saved at {full_file_path}")
 
-# if "df_A" not in st.session_state:
-#     st.session_state.df_A = None
+# def reset_variable():
+#     st.session_state.iteration = None
+#     st.session_state.conv_rate = None
+#     st.session_state.df_result = None
+
+# if "iteration" not in st.session_state:
+#     st.session_state.iteration = None
     
-# if "df_B" not in st.session_state:
-#     st.session_state.df_B = None
+# if "conv_rate" not in st.session_state:
+#     st.session_state.conv_rate = None
     
-if "df_result" not in st.session_state:
-    st.session_state.df_result = None
+# if "df_result" not in st.session_state:
+#     st.session_state.df_result = None
 
 with file_container:
     st.header("Choose an input file")
+    file_path = st.text_input("File directory",r"C:\\")
     uploaded_file = st.file_uploader("Choose an excel file",type="xlsx")
+    
+    if uploaded_file is not None:
+        full_file_path = os.path.join(file_path,uploaded_file.name)
+        if os.path.exists(full_file_path):
+            st.write(full_file_path)
+        else:
+            st.write(f"Couldn't find file in local drive {full_file_path}")
+            st.write("Please enter the correct file directory.")
+            uploaded_file = None
 
 if uploaded_file is not None:
     
     sheet_A,sheet_B,sheet_S,row_A,row_B,row_S = get_sheets_and_rows(uploaded_file)
     with table_container:
-        # if st.button("Read tables"):
-            
+  
         df_seed,df_A,df_B = read_table(uploaded_file,sheet_A,sheet_B,sheet_S,row_A,row_B,row_S)
-        
-        # st.session_state.df_seed = df_seed
-        # st.session_state.df_A = df_A
-        # st.session_state.df_B = df_B
-        
-        
-    
+
     if df_seed is not None and \
         df_A is not None and \
         df_B is not None:
-        df_result = generate_results(df_seed,df_A,df_B)
-        st.session_state.df_result = df_result
-        
-    else:
-        st.session_state.df_result = None
-        
-    if st.session_state.df_result is not None:
-        writer = pd.ExcelWriter(uploaded_file,engine='openpyxl',mode='a',
-                        if_sheet_exists='new')
-        st.session_state.df_result.to_excel(writer,sheet_name = 'Results',index=False,engine='openpyxl')
-        writer.close()
-        with result_container:
-            if st.download_button("Download Results",uploaded_file,file_name=uploaded_file.name):
-                pass
-        
-    
-    # Can be used wherever a "file-like" object is accepted:
-    dataframe = pd.read_excel(uploaded_file)
+        generate_results(df_seed,df_A,df_B)
+
     st.write(uploaded_file.name)
