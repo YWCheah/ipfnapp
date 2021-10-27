@@ -38,17 +38,21 @@ def get_number_of_field(df):
     
     i=0
     for column in df.columns:
-        try:
-            if column == "Year":
-                i+=1
-            else:
-                int(column)
-                pd.to_numeric(df[column])
-                if i != 0:
-                    break
-
-        except ValueError:
+        
+        if column == "Year":
             i+=1
+        else:
+            
+            try:
+                pd.to_numeric(df[column])
+                if "Year" in df.columns and i != 0:
+                    break
+                else:
+                    int(column)
+                    break
+                
+            except ValueError:
+                i+=1
             
     return i
 
