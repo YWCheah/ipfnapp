@@ -195,8 +195,7 @@ def generate_results(df_seed,df_A,df_B):
                             convergence_rate=convergence_rate,rate_tolerance=rate_tolerance,max_iteration=max_iteration)
             df,flag,df_iteration = IPF.iteration()
             st.write(df_seed)
-            # st.session_state.df_result = df
-            # get iteration and convergence rate
+
             iteration = max(df_iteration.index)
             conv_rate = df_iteration.iat[iteration,0]
             
@@ -207,41 +206,20 @@ def generate_results(df_seed,df_A,df_B):
             st.write(f"Convergence rate: {conv_rate}")
             st.write("Saving results...")
             
-            writer = pd.ExcelWriter(full_file_path,engine='openpyxl',mode='a',
+            writer = pd.ExcelWriter(uploaded_file,engine='openpyxl',mode='a',
                             if_sheet_exists='new')
             df.to_excel(writer,sheet_name = 'Results',index=False,engine='openpyxl')
             writer.close()
-            
-            st.write(f"Results saved at {full_file_path}")
 
-# def reset_variable():
-#     st.session_state.iteration = None
-#     st.session_state.conv_rate = None
-#     st.session_state.df_result = None
-
-# if "iteration" not in st.session_state:
-#     st.session_state.iteration = None
-    
-# if "conv_rate" not in st.session_state:
-#     st.session_state.conv_rate = None
-    
-# if "df_result" not in st.session_state:
-#     st.session_state.df_result = None
+            with result_container:
+                if st.download_button("Download Results",uploaded_file,file_name=uploaded_file.name):
+                    pass
 
 with file_container:
     st.header("Choose an input file")
-    file_path = st.text_input("File directory",r"C:\\")
+
     uploaded_file = st.file_uploader("Choose an excel file",type="xlsx")
     
-    if uploaded_file is not None:
-        full_file_path = os.path.join(file_path,uploaded_file.name).replace("/",r"\\")
-        if os.path.exists(full_file_path):
-            st.write(full_file_path)
-        else:
-            st.write(f"Couldn't find file in local drive {full_file_path}")
-            st.write("Please enter the correct file directory.")
-            uploaded_file = None
-
 if uploaded_file is not None:
     
     sheet_A,sheet_B,sheet_S,row_A,row_B,row_S = get_sheets_and_rows(uploaded_file)
@@ -253,5 +231,5 @@ if uploaded_file is not None:
         df_A is not None and \
         df_B is not None:
         generate_results(df_seed,df_A,df_B)
-
+    
     st.write(uploaded_file.name)
