@@ -178,7 +178,35 @@ def read_table(file,sheet_A,sheet_B,sheet_S,row_A,row_B,row_S):
         else:
             return None,None,None
 
+def format_result_table(df_result,df_seed_index):
+    
+    # format result table if N=3
+    if len(df_seed_index) == 3:
+        df_result = df_result.set_index(df_seed_index).unstack(level=2).droplevel(0,axis=1)
+        
+        df_grand_total_row = df_result.sum()
+            
+        df_subtotal = df_result.groupby([df_seed_index[0]],level=0).sum()
+        
+        # add subtotal row
+        for x in df_subtotal.index.tolist():
+            df_result.loc[(x,"Total"),:] = df_subtotal.loc[x,:]
+            df_result = df_result.sort_index(level=0)
+        
+        # add grand total row
+        if df_result.columns.name != "Year":
+            df_result.insert(0,"Total industry",df_result.sum(axis=1))
+        else:
+            df_result.loc[("Grand Total","Grand Total"),:] = df_grand_total_row
+
+    else:
+        df_result = df_result.set_index(df_seed_index).unstack(level=-1).droplevel(0,axis=1)
+    
+    
 def generate_results(df_seed,df_A,df_B):
+    
+    # save the initial seed index for later formatting
+    df_seed_index = df_seed.columns.tolist()[0:-1]
     
     aggregates = [df_A,df_B]
     dimensions = [list(df_A.index.names),list(df_B.index.names)]
@@ -213,8 +241,12 @@ def generate_results(df_seed,df_A,df_B):
             writer = pd.ExcelWriter(uploaded_file,engine='openpyxl',mode='a',
                             if_sheet_exists='new')
             df.to_excel(writer,sheet_name = 'Results',index=False,engine='openpyxl')
+            
+            df_result = format_result_table(df,df_seed_index)            
+            df_result.to_excel(writer,sheet_name = "Results_formatted",merge_cells=False,engine='openpyxl')
+            
             writer.close()
-
+            
             with result_container:
                 if st.download_button("Download Results",uploaded_file,file_name=uploaded_file.name):
                     pass
