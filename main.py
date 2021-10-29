@@ -8,7 +8,6 @@ Created on Thu Oct 21 15:36:04 2021
 import streamlit as st
 import pandas as pd
 from ipfn import ipfn
-import os
 
 st.title("IPFN Application")
 file_container = st.container()
@@ -231,13 +230,10 @@ def generate_results(df_seed,df_A,df_B):
 
             iteration = max(df_iteration.index)
             conv_rate = df_iteration.iat[iteration,0]
-            
-            st.session_state.iteration = iteration
-            st.session_state.conv_rate = conv_rate
-            
+
             st.write(f"Number of Iteration: {iteration+1}")
             st.write(f"Convergence rate: {conv_rate}")
-            st.write("Saving results...")
+            st.session_state.save = st.write("Saving results...")
             
             writer = pd.ExcelWriter(uploaded_file,engine='openpyxl',mode='a',
                             if_sheet_exists='new')
@@ -248,6 +244,8 @@ def generate_results(df_seed,df_A,df_B):
             df_result.to_excel(writer,sheet_name = "Results_formatted",merge_cells=False,engine='openpyxl')
             
             writer.close()
+            
+            st.session_state.save = st.write("Results saved.")
             
             with result_container:
                 if st.download_button("Download Results",uploaded_file,file_name=uploaded_file.name):
