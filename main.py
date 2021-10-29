@@ -202,6 +202,7 @@ def format_result_table(df_result,df_seed_index):
     else:
         df_result = df_result.set_index(df_seed_index).unstack(level=-1).droplevel(0,axis=1)
     
+    return df_result
     
 def generate_results(df_seed,df_A,df_B):
     
