@@ -241,6 +241,7 @@ def generate_results(df_seed,df_A,df_B):
             
             writer = pd.ExcelWriter(uploaded_file,engine='openpyxl',mode='a',
                             if_sheet_exists='new')
+            df = df.rename(columns={0:"Value"})
             df.to_excel(writer,sheet_name = 'Results',index=False,engine='openpyxl')
             
             df_result = format_result_table(df,df_seed_index)            
