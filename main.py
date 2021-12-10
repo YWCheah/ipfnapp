@@ -223,7 +223,7 @@ def generate_results(df_seed,df_A,df_B):
         
         if st.button("Generate Results"):
 
-            IPF = ipfn.ipfn_df(df_seed, aggregates, dimensions,weight_col=0,verbose=2,
+            IPF = ipfn.ipfn(df_seed, aggregates, dimensions,weight_col=0,verbose=2,
                             convergence_rate=convergence_rate,rate_tolerance=rate_tolerance,max_iteration=max_iteration)
             df,flag,df_iteration = IPF.iteration()
             st.write(df_seed)
