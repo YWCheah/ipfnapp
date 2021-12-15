@@ -222,34 +222,37 @@ def generate_results(df_seed,df_A,df_B):
             max_iteration = st.number_input("Maximum iteration",step=1,value=500,key="iter")
         
         if st.button("Generate Results"):
-
-            IPF = ipfn(df_seed, aggregates, dimensions,weight_col=0,verbose=2,
-                            convergence_rate=convergence_rate,rate_tolerance=rate_tolerance,max_iteration=max_iteration)
-            df,flag,df_iteration = IPF.iteration()
-            st.write(df_seed)
-
-            iteration = max(df_iteration.index)
-            conv_rate = df_iteration.iat[iteration,0]
-
-            st.write(f"Number of Iteration: {iteration+1}")
-            st.write(f"Convergence rate: {conv_rate}")
-            st.session_state.save = st.write("Saving results...")
+            try:
+                IPF = ipfn(df_seed, aggregates, dimensions,weight_col=0,verbose=2,
+                                convergence_rate=convergence_rate,rate_tolerance=rate_tolerance,max_iteration=max_iteration)
+                df,flag,df_iteration = IPF.iteration()
+                st.write(df_seed)
+    
+                iteration = max(df_iteration.index)
+                conv_rate = df_iteration.iat[iteration,0]
+    
+                st.write(f"Number of Iteration: {iteration+1}")
+                st.write(f"Convergence rate: {conv_rate}")
+                st.session_state.save = st.write("Saving results...")
+                
+                writer = pd.ExcelWriter(uploaded_file,engine='openpyxl',mode='a',
+                                if_sheet_exists='new')
+                df = df.rename(columns={0:"Value"})
+                df.to_excel(writer,sheet_name = 'Results',index=False,engine='openpyxl')
+                
+                df_result = format_result_table(df,df_seed_index)            
+                df_result.to_excel(writer,sheet_name = "Results_formatted",merge_cells=False,engine='openpyxl')
+                
+                writer.close()
+                
+                st.session_state.save = st.write("Results saved.")
+                
+                with result_container:
+                    if st.download_button("Download Results",uploaded_file,file_name=uploaded_file.name):
+                        pass
             
-            writer = pd.ExcelWriter(uploaded_file,engine='openpyxl',mode='a',
-                            if_sheet_exists='new')
-            df = df.rename(columns={0:"Value"})
-            df.to_excel(writer,sheet_name = 'Results',index=False,engine='openpyxl')
-            
-            df_result = format_result_table(df,df_seed_index)            
-            df_result.to_excel(writer,sheet_name = "Results_formatted",merge_cells=False,engine='openpyxl')
-            
-            writer.close()
-            
-            st.session_state.save = st.write("Results saved.")
-            
-            with result_container:
-                if st.download_button("Download Results",uploaded_file,file_name=uploaded_file.name):
-                    pass
+            except Exception as e:
+                st.exception(e)
 
 with file_container:
     st.header("Choose an input file")
