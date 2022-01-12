@@ -9,7 +9,7 @@ import streamlit as st
 import pandas as pd
 from ipfn import ipfn
 
-st.title("IPFN Application")
+st.title("Matric Balancing Tool")
 file_container = st.container()
 sheets_container = st.container()
 table_container = st.container()
