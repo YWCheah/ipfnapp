@@ -2,7 +2,6 @@
 from __future__ import print_function
 import numpy as np
 import pandas as pd
-import sys
 from itertools import product
 import copy
 
@@ -41,6 +40,8 @@ class ipfn(object):
         self.weight_col = weight_col
         self.conv_rate = convergence_rate
         self.max_itr = max_iteration
+        if verbose not in [0, 1, 2]:
+            raise(ValueError(f"wrong verbose input, must be either 0, 1 or 2 but got {verbose}"))
         self.verbose = verbose
         self.rate_tolerance = rate_tolerance
 
@@ -77,16 +78,16 @@ class ipfn(object):
         inc = 0
         for aggregate in aggregates:
             if not isinstance(aggregate, np.ndarray):
-                aggregate = np.array(aggregate).astype(np.float)
+                aggregate = np.array(aggregate).astype(float)
                 aggregates[inc] = aggregate
-            elif aggregate.dtype not in [np.float, float]:
-                aggregate = aggregate.astype(np.float)
+            elif aggregate.dtype not in [float, float]:
+                aggregate = aggregate.astype(float)
                 aggregates[inc] = aggregate
             inc += 1
         if not isinstance(m, np.ndarray):
             m = np.array(m)
-        elif m.dtype not in [np.float, float]:
-            m = m.astype(np.float)
+        elif m.dtype not in [float, float]:
+            m = m.astype(float)
 
         steps = len(aggregates)
         dim = len(m.shape)
@@ -208,16 +209,16 @@ class ipfn(object):
 
             multi_index_flag = isinstance(table_update.index, pd.MultiIndex)
             if multi_index_flag:
-                if not table_update.index.is_lexsorted():
+                if not table_update.index.is_monotonic_increasing:
                     table_update.sort_index(inplace=True)
-                if not table_current.index.is_lexsorted():
+                if not table_current.index.is_monotonic_increasing:
                     table_current.sort_index(inplace=True)
 
             for feature in product(*feat_l):
                 try:
                     den = tmp.loc[feature]
                 except KeyError:
-                    continue                    
+                    continue 
                 # calculate new weight for this iteration
 
                 if not multi_index_flag:
@@ -246,7 +247,6 @@ class ipfn(object):
             tmp = table_update.groupby(features)[weight_col].sum()
             ori_ijk = aggregates[inc]
             temp_conv = max(abs(tmp / ori_ijk - 1))
-            # temp_conv = max(abs(tmp - ori_ijk))
             if temp_conv > max_conv:
                 max_conv = temp_conv
             inc += 1
@@ -271,8 +271,7 @@ class ipfn(object):
             ipfn_method = self.ipfn_np
             self.original = self.original.astype('float64')
         else:
-            print('Data input instance not recognized')
-            sys.exit(0)
+            raise(ValueError(f'Data input instance not recognized. The input matrix is not a numpy array or pandas DataFrame'))
         while ((i <= self.max_itr and conv > self.conv_rate) and (i <= self.max_itr and abs(conv - old_conv) > self.rate_tolerance)):
             old_conv = conv
             m, conv = ipfn_method(m, self.aggregates, self.dimensions, self.weight_col)
@@ -296,5 +295,4 @@ class ipfn(object):
         elif self.verbose == 2:
             return m, converged, pd.DataFrame({'iteration': range(i), 'conv': conv_list}).set_index('iteration')
         else:
-            print('wrong verbose input, return None')
-            sys.exit(0)
+            raise(ValueError(f'wrong verbose input, must be either 0, 1 or 2 but got {self.verbose}'))
