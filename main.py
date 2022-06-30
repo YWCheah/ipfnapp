@@ -195,6 +195,10 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
 
     else:
         df_seed = create_new_seed_table(df_A, df_B, field_name_A, field_name_B)
+        writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
+                                if_sheet_exists='new')
+        df_seed.to_excel(writer, sheet_name='NEW_SEED', engine='openpyxl', index=False)
+        writer.close()
         # st.write(df_seed.astype(str))
 
     # get number of field for seed table
@@ -254,6 +258,7 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
                                         if_sheet_exists='new')
                 df_compare.to_excel(writer, sheet_name='CHECK_TABLES_NOT_OK', engine='openpyxl')
                 writer.close()
+
             # drop unmatch rows
             df_seed, df_A, df_B = drop_unmatch_rows(df_seed, df_A, df_B)
 
@@ -272,6 +277,9 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
 
             if st.download_button("Download Check Results", uploaded_file, file_name=uploaded_file.name):
                 pass
+            if st.session_state.create_new_seed:
+                if st.download_button("Download New Seed Table", uploaded_file, file_name=uploaded_file.name):
+                    pass
 
             return df_seed, df_A, df_B
 
