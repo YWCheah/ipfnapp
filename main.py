@@ -10,7 +10,7 @@ import pandas as pd
 from ipfn import ipfn
 
 
-st.title("Matric Balancing Tool")
+st.title("Matrix Balancing Tool")
 file_container = st.container()
 sheets_container = st.container()
 table_container = st.container()
