@@ -169,6 +169,7 @@ def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
     return df_seed
 
 
+@st.cache
 def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
     # read tables by sheetname, header set to None as the start row is different
     df_A = pd.read_excel(file, sheet_name=sheet_A, skiprows=row_A - 1).dropna(axis=1, how="all").dropna(axis=0,
