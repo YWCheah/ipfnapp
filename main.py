@@ -17,7 +17,7 @@ check_field_container = st.container()
 result_container = st.container()
 
 
-@st.cache_data
+@st.cache_data(experimental_allow_widgets=True)
 def get_sheets_and_rows(file):
     excel_file = pd.ExcelFile(uploaded_file)
     excel_sheets = excel_file.sheet_names
@@ -71,7 +71,7 @@ def rename_industry_column_name(x):
     return x
 
 
-@st.cache_data
+@st.cache_data(experimental_allow_widgets=True)
 def validate_field_name(target_field, seed_field):
     with table_container:
         for field in target_field:
@@ -175,7 +175,7 @@ def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
     return df_seed
 
 
-@st.cache_data
+@st.cache_data(experimental_allow_widgets=True)
 def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
     # read tables by sheetname, header set to None as the start row is different
     df_A = pd.read_excel(file, sheet_name=sheet_A, skiprows=row_A - 1).dropna(axis=1, how="all").dropna(axis=0,
@@ -328,7 +328,7 @@ def format_result_table(df_result, df_seed_index):
     return df_result
 
 
-@st.cache_data
+@st.cache_data(experimental_allow_widgets=True)
 def generate_results(df_seed, df_A, df_B):
     # save the initial seed index for later formatting
     df_seed_index = df_seed.columns.tolist()[0:-1]
