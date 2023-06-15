@@ -17,6 +17,7 @@ check_field_container = st.container()
 result_container = st.container()
 
 
+@st.cache_data
 def get_sheets_and_rows(file):
     excel_file = pd.ExcelFile(uploaded_file)
     excel_sheets = excel_file.sheet_names
