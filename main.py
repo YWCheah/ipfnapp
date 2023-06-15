@@ -4,7 +4,7 @@ Created on Thu Oct 21 15:36:04 2021
 
 @author: CheahY
 """
-import subprocess
+# import subprocess
 import streamlit as st
 import pandas as pd
 from ipfn import ipfn
@@ -415,5 +415,5 @@ if "df_seed" in st.session_state:
 
     st.write(uploaded_file.name)
 
-if __name__ == '__main__':
-    subprocess.run("streamlit run main.py")
+# if __name__ == '__main__':
+#     subprocess.run("streamlit run main.py")
