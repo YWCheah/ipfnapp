@@ -4,7 +4,7 @@ Created on Thu Oct 21 15:36:04 2021
 
 @author: CheahY
 """
-
+import subprocess
 import streamlit as st
 import pandas as pd
 from ipfn import ipfn
@@ -240,8 +240,11 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
             st.write(f"Target B: {' x '.join(field_name_B)} x Year")
             st.write(f"Seed: {' x '.join(field_name_S)}")
 
-            # check field item of each table
-            compare, df_compare = validate_field_item(df_seed, df_A, df_B)
+            if "compare" not in st.session_state:
+                # check field item of each table
+                compare, df_compare = validate_field_item(df_seed, df_A, df_B)
+                st.session_state["compare"] = compare
+                st.session_state["df_compare"] = df_compare
 
             # if all the field item is matched then proceed
             if compare:
@@ -411,3 +414,6 @@ if "df_seed" in st.session_state:
         generate_results(st.session_state["df_seed"], st.session_state["df_A"], st.session_state["df_B"])
 
     st.write(uploaded_file.name)
+
+if __name__ == '__main__':
+    subprocess.run("streamlit run main.py")
