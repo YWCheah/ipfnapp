@@ -4,7 +4,6 @@ Created on Thu Oct 21 15:36:04 2021
 
 @author: CheahY
 """
-# import subprocess
 import streamlit as st
 import pandas as pd
 from ipfn import ipfn
@@ -17,7 +16,7 @@ table_container = st.container()
 check_field_container = st.container()
 result_container = st.container()
 
-
+@st.cache
 def get_sheets_and_rows(file):
     excel_file = pd.ExcelFile(uploaded_file)
     excel_sheets = excel_file.sheet_names
@@ -36,7 +35,7 @@ def get_sheets_and_rows(file):
 
     return sheet_A, sheet_B, sheet_S, int(row_A), int(row_B), int(row_S)
 
-
+@st.cache
 def get_number_of_field(df):
     i = 0
     for column in df.columns:
@@ -58,7 +57,7 @@ def get_number_of_field(df):
 
     return i
 
-
+@st.cache
 def rename_industry_column_name(x):
     if type(x) == str:
         x = x.strip()
@@ -68,7 +67,7 @@ def rename_industry_column_name(x):
 
     return x
 
-
+@st.cache
 def validate_field_name(target_field, seed_field):
     with table_container:
         for field in target_field:
@@ -78,7 +77,7 @@ def validate_field_name(target_field, seed_field):
 
     return True
 
-
+@st.cache
 def drop_unmatch_rows(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
@@ -102,7 +101,7 @@ def drop_unmatch_rows(df_seed, df_A, df_B):
 
     return df_seed, df_A, df_B
 
-
+@st.cache
 def validate_field_item(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
@@ -144,7 +143,7 @@ def validate_field_item(df_seed, df_A, df_B):
 
     return compare, df_compare
 
-
+@st.cache
 def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
 
     index_names = []
@@ -168,7 +167,7 @@ def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
 
     return df_seed
 
-
+@st.cache
 def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
     # read tables by sheetname, header set to None as the start row is different
     df_A = pd.read_excel(file, sheet_name=sheet_A, skiprows=row_A - 1).dropna(axis=1, how="all").dropna(axis=0,
@@ -293,7 +292,7 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
         else:
             return None, None, None
 
-
+@st.cache
 def format_result_table(df_result, df_seed_index):
     # format result table if N=3
     if len(df_seed_index) == 3:
@@ -319,7 +318,7 @@ def format_result_table(df_result, df_seed_index):
 
     return df_result
 
-
+@st.cache
 def generate_results(df_seed, df_A, df_B):
     # save the initial seed index for later formatting
     df_seed_index = df_seed.columns.tolist()[0:-1]
@@ -414,6 +413,3 @@ if "df_seed" in st.session_state:
         generate_results(st.session_state["df_seed"], st.session_state["df_A"], st.session_state["df_B"])
 
     st.write(uploaded_file.name)
-
-# if __name__ == '__main__':
-#     subprocess.run("streamlit run main.py")
