@@ -17,7 +17,6 @@ check_field_container = st.container()
 result_container = st.container()
 
 
-@st.cache(allow_output_mutation=True)
 def get_sheets_and_rows(file):
     excel_file = pd.ExcelFile(uploaded_file)
     excel_sheets = excel_file.sheet_names
@@ -36,7 +35,7 @@ def get_sheets_and_rows(file):
 
     return sheet_A, sheet_B, sheet_S, int(row_A), int(row_B), int(row_S)
 
-@st.cache(allow_output_mutation=True)
+
 def get_number_of_field(df):
     i = 0
     for column in df.columns:
@@ -58,7 +57,7 @@ def get_number_of_field(df):
 
     return i
 
-@st.cache(allow_output_mutation=True)
+
 def rename_industry_column_name(x):
     if type(x) == str:
         x = x.strip()
@@ -68,7 +67,7 @@ def rename_industry_column_name(x):
 
     return x
 
-@st.cache(allow_output_mutation=True)
+
 def validate_field_name(target_field, seed_field):
     with table_container:
         for field in target_field:
@@ -78,7 +77,7 @@ def validate_field_name(target_field, seed_field):
 
     return True
 
-@st.cache(allow_output_mutation=True)
+
 def drop_unmatch_rows(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
@@ -102,7 +101,7 @@ def drop_unmatch_rows(df_seed, df_A, df_B):
 
     return df_seed, df_A, df_B
 
-@st.cache(allow_output_mutation=True)
+
 def validate_field_item(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
@@ -144,7 +143,7 @@ def validate_field_item(df_seed, df_A, df_B):
 
     return compare, df_compare
 
-@st.cache(allow_output_mutation=True)
+
 def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
 
     index_names = []
@@ -168,7 +167,7 @@ def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
 
     return df_seed
 
-@st.cache(allow_output_mutation=True)
+
 def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
     # read tables by sheetname, header set to None as the start row is different
     df_A = pd.read_excel(file, sheet_name=sheet_A, skiprows=row_A - 1).dropna(axis=1, how="all").dropna(axis=0,
@@ -293,7 +292,7 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
         else:
             return None, None, None
 
-@st.cache(allow_output_mutation=True)
+
 def format_result_table(df_result, df_seed_index):
     # format result table if N=3
     if len(df_seed_index) == 3:
@@ -319,7 +318,7 @@ def format_result_table(df_result, df_seed_index):
 
     return df_result
 
-@st.cache(allow_output_mutation=True)
+
 def generate_results(df_seed, df_A, df_B):
     # save the initial seed index for later formatting
     df_seed_index = df_seed.columns.tolist()[0:-1]
