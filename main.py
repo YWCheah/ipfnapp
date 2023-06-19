@@ -244,7 +244,7 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
             st.write(f"Target B: {' x '.join(field_name_B)} x Year")
             st.write(f"Seed: {' x '.join(field_name_S)}")
 
-            if "compare" not in st.session_state:
+            if "compare" not in st.session_state or "df_compare" not in st.session_state:
                 # check field item of each table
                 compare, df_compare = validate_field_item(df_seed, df_A, df_B)
                 st.session_state["compare"] = compare
