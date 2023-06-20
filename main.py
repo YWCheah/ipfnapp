@@ -244,24 +244,27 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
             st.write(f"Target B: {' x '.join(field_name_B)} x Year")
             st.write(f"Seed: {' x '.join(field_name_S)}")
 
-            # check field item of each table
-            compare, df_compare = validate_field_item(df_seed, df_A, df_B)
-
-            # if all the field item is matched then proceed
-            if compare:
-                with check_field_container:
-                    st.info("Field items are matched.")
-                writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                        if_sheet_exists='new')
-                df_compare.to_excel(writer, sheet_name='CHECK_TABLES_OK', engine='openpyxl')
-                writer.close()
-            else:
-                with check_field_container:
-                    st.warning("Field item does not match. Please check the file.")
-                writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                        if_sheet_exists='new')
-                df_compare.to_excel(writer, sheet_name='CHECK_TABLES_NOT_OK', engine='openpyxl')
-                writer.close()
+            if "compare" not in st.session_state:
+                # check field item of each table
+                compare, df_compare = validate_field_item(df_seed, df_A, df_B)
+                st.session_state["compare"] = compare
+                st.session_state["df_compare"] = df_compare
+                
+                # if all the field item is matched then proceed
+                if compare:
+                    with check_field_container:
+                        st.info("Field items are matched.")
+                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
+                                            if_sheet_exists='new')
+                    df_compare.to_excel(writer, sheet_name='CHECK_TABLES_OK', engine='openpyxl')
+                    writer.close()
+                else:
+                    with check_field_container:
+                        st.warning("Field item does not match. Please check the file.")
+                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
+                                            if_sheet_exists='new')
+                    df_compare.to_excel(writer, sheet_name='CHECK_TABLES_NOT_OK', engine='openpyxl')
+                    writer.close()
 
             # drop unmatch rows
             df_seed, df_A, df_B = drop_unmatch_rows(df_seed, df_A, df_B)
