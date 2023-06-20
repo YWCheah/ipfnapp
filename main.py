@@ -390,6 +390,9 @@ if uploaded_file is None:
         del st.session_state["df_seed"]
         del st.session_state["df_A"]
         del st.session_state["df_B"]
+    if "compare" in st.session_state:
+        del st.session_state["compare"]
+        del st.session_state["df_compare"]
     st.stop()
 
 st.session_state.button_read_table = False
