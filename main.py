@@ -326,6 +326,7 @@ def format_result_table(df_result, df_seed_index):
     return df_result
 
 
+@st.cache_data
 def generate_results(df_seed, df_A, df_B):
     # save the initial seed index for later formatting
     df_seed_index = df_seed.columns.tolist()[0:-1]
