@@ -36,7 +36,7 @@ def get_sheets_and_rows(file):
     return sheet_A, sheet_B, sheet_S, int(row_A), int(row_B), int(row_S)
 
 
-@st.cache_data
+# @st.cache_data
 def get_number_of_field(df):
     i = 0
     for column in df.columns:
@@ -59,7 +59,7 @@ def get_number_of_field(df):
     return i
 
 
-@st.cache_data
+# @st.cache_data
 def rename_industry_column_name(x):
     if type(x) == str:
         x = x.strip()
@@ -80,7 +80,7 @@ def validate_field_name(target_field, seed_field):
     return True
 
 
-@st.cache_data
+# @st.cache_data
 def drop_unmatch_rows(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
@@ -105,7 +105,7 @@ def drop_unmatch_rows(df_seed, df_A, df_B):
     return df_seed, df_A, df_B
 
 
-@st.cache_data
+# @st.cache_data
 def validate_field_item(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
@@ -148,7 +148,7 @@ def validate_field_item(df_seed, df_A, df_B):
     return compare, df_compare
 
 
-@st.cache_data
+# @st.cache_data
 def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
 
     index_names = []
@@ -299,7 +299,7 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
             return None, None, None
 
 
-@st.cache_data
+# @st.cache_data
 def format_result_table(df_result, df_seed_index):
     # format result table if N=3
     if len(df_seed_index) == 3:
