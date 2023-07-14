@@ -376,11 +376,11 @@ with sheets_container:
     button_read = st.button("Read tables")
 
 if button_read:
-    st.session_state.button_read_table = True
+    st.session_state["button_read_table"] = True
     if create_new_seed:
-        st.session_state.create_new_seed = True
+        st.session_state["create_new_seed"] = True
     else:
-        st.session_state.create_new_seed = False
+        st.session_state["create_new_seed"] = False
 
 
 if "button_read_table" in st.session_state:
@@ -412,6 +412,4 @@ if "df_seed" in st.session_state:
 
         generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
 
-st.write(st.session_state.button_read_table)
-st.write(st.session_state.df_seed)
 st.write(uploaded_file.name)
