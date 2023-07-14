@@ -413,7 +413,7 @@ if st.session_state["df_seed"] is not None and \
 
     button_generate = st.button("Generate Results")
 
-if button_generate:
-    generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
+    if button_generate:
+        generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
 
 st.write(uploaded_file.name)
