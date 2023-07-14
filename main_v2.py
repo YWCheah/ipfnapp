@@ -11,7 +11,6 @@ import pandas as pd
 from ipfn import ipfn
 
 
-@st.cache
 def get_number_of_field(df):
     i = 0
     for column in df.columns:
@@ -30,7 +29,6 @@ def get_number_of_field(df):
     return i
 
 
-@st.cache
 def rename_industry_column_name(x):
     if type(x) == str:
         x = x.strip()
@@ -39,7 +37,6 @@ def rename_industry_column_name(x):
     return x
 
 
-@st.cache
 def drop_unmatch_rows(df_seed, df_A, df_B):
     for column in df_seed.columns[:-1]:
         if column in df_A.index.names:
@@ -55,7 +52,6 @@ def drop_unmatch_rows(df_seed, df_A, df_B):
     return df_seed, df_A, df_B
 
 
-@st.cache
 def validate_field_item(df_seed, df_A, df_B):
     df_compare = pd.DataFrame(columns=["seed", "target_A", "target_B"])
     compare = True
@@ -89,7 +85,6 @@ def validate_field_item(df_seed, df_A, df_B):
     return compare, df_compare
 
 
-@st.cache
 def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
     index_names = []
     list_field_item = []
@@ -246,6 +241,9 @@ def generate_results(df_seed, df_A, df_B):
         except Exception as e:
             st.exception(e)
 
+df_seed = None
+df_A = None
+df_B = None
 
 st.title("Matrix Balancing Tool")
 
@@ -261,9 +259,6 @@ with st.container():
     create_new_seed = st.checkbox("Create new seed table")
     button_read = st.button("Read tables")
 
-df_seed = None
-df_A = None
-df_B = None
 if button_read:
     df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S, create_new_seed)
 
