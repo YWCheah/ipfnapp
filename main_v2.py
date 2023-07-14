@@ -241,9 +241,6 @@ def generate_results(df_seed, df_A, df_B):
         except Exception as e:
             st.exception(e)
 
-df_seed = None
-df_A = None
-df_B = None
 
 st.title("Matrix Balancing Tool")
 
@@ -262,7 +259,7 @@ with st.container():
 if button_read:
     df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S, create_new_seed)
 
-if df_seed is not None and df_A is not None and df_B is not None:
-    generate_results(df_seed, df_A, df_B)
+    if df_seed is not None and df_A is not None and df_B is not None:
+        generate_results(df_seed, df_A, df_B)
 
 st.write(uploaded_file.name)
