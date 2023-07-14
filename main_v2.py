@@ -249,14 +249,14 @@ def generate_results(df_seed, df_A, df_B):
 
 st.title("Matrix Balancing Tool")
 
-with st.beta_container():
+with st.container():
     st.header("Choose an input file")
     uploaded_file = st.file_uploader("Choose an excel file", type="xlsx")
 
 if uploaded_file is None:
     st.stop()
 
-with st.beta_container():
+with st.container():
     sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(uploaded_file)
     create_new_seed = st.checkbox("Create new seed table")
     button_read = st.button("Read tables")
