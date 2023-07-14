@@ -13,14 +13,6 @@ table_container = st.container()
 check_field_container = st.container()
 result_container = st.container()
 download_container = st.container()
-st.session_state.create_new_seed = False
-st.session_state.compare = None
-st.session_state.df_compare = None
-st.session_state.button_read_table = False
-st.session_state.df_seed = None
-st.session_state.df_A = None
-st.session_state.df_B = None
-st.session_state.button_generate_results = False
 
 
 def get_sheets_and_rows(file):
@@ -390,36 +382,35 @@ if button_read:
     else:
         st.session_state.create_new_seed = False
 
-if st.session_state.button_read_table:
-    with read_table_container:
-        df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S)
 
-        st.session_state["df_seed"] = df_seed
-        st.session_state["df_A"] = df_A
-        st.session_state["df_B"] = df_B
+if "button_read_table" in st.session_state:
+    if st.session_state.button_read_table and "df_seed" not in st.session_state:
+        with read_table_container:
+            df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S)
 
-if st.session_state["df_seed"] is not None and \
-        st.session_state["df_A"] is not None and st.session_state["df_B"] is not None:
-    aggregates = [st.session_state["df_A"], st.session_state["df_B"]]
-    dimensions = [list(st.session_state["df_A"].index.names), list(st.session_state["df_B"].index.names)]
+            st.session_state["df_seed"] = df_seed
+            st.session_state["df_A"] = df_A
+            st.session_state["df_B"] = df_B
 
-    with result_container:
-        col1, col2, col3 = st.columns(3)
+if "df_seed" in st.session_state:
+    if st.session_state["df_seed"] is not None and \
+            st.session_state["df_A"] is not None and st.session_state["df_B"] is not None:
+        aggregates = [st.session_state["df_A"], st.session_state["df_B"]]
+        dimensions = [list(st.session_state["df_A"].index.names), list(st.session_state["df_B"].index.names)]
 
-        with col1:
-            convergence_rate = st.number_input("Convergence rate", value=1e-5, step=1e-5, format="%.f", key="conv")
-        with col2:
-            rate_tolerance = st.number_input("Tolerance rate", value=1e-8, step=1e-8, format="%.f", key="tol")
-        with col3:
-            max_iteration = st.number_input("Maximum iteration", step=1, value=500, key="iter")
+        with result_container:
+            col1, col2, col3 = st.columns(3)
 
-    button_generate = st.button("Generate Results")
+            with col1:
+                convergence_rate = st.number_input("Convergence rate", value=1e-5, step=1e-5, format="%.f", key="conv")
+            with col2:
+                rate_tolerance = st.number_input("Tolerance rate", value=1e-8, step=1e-8, format="%.f", key="tol")
+            with col3:
+                max_iteration = st.number_input("Maximum iteration", step=1, value=500, key="iter")
 
-    if button_generate:
-        st.session_state.button_generate_results = True
+        button_generate = st.button("Generate Results")
 
-if st.session_state.button_generate_results:
-    generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
+        generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
 
 st.write(st.session_state.button_read_table)
 st.write(st.session_state.df_seed)
