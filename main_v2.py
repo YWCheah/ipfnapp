@@ -22,7 +22,9 @@ st.session_state.df_A = None
 st.session_state.df_B = None
 st.session_state.button_generate_results = False
 
-def get_sheets_and_rows(excel_file):
+
+def get_sheets_and_rows(file):
+    excel_file = pd.ExcelFile(file)
     excel_sheets = excel_file.sheet_names
     with sheets_container:
         col1, col2 = st.columns(2)
@@ -371,12 +373,11 @@ def generate_results(df_seed, aggregates, dimensions, convergence_rate, rate_tol
 with file_container:
     st.header("Choose an input file")
     uploaded_file = st.file_uploader("Choose an excel file", type="xlsx")
-    excel_file = pd.ExcelFile(uploaded_file)
 
 if uploaded_file is None:
     st.stop()
 
-sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(excel_file)
+sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(uploaded_file)
 
 with sheets_container:
     create_new_seed = st.checkbox("Create new seed table")
