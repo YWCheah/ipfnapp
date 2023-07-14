@@ -13,6 +13,14 @@ table_container = st.container()
 check_field_container = st.container()
 result_container = st.container()
 download_container = st.container()
+st.session_state.create_new_seed = False
+st.session_state.compare = None
+st.session_state.df_compare = None
+# st.session_state.button_read_table = False
+# st.session_state.df_seed = None
+# st.session_state.df_A = None
+# st.session_state.df_B = None
+# st.session_state.button_generate_results = False
 
 
 def get_sheets_and_rows(file):
@@ -367,6 +375,14 @@ with file_container:
     uploaded_file = st.file_uploader("Choose an excel file", type="xlsx")
 
 if uploaded_file is None:
+    st.session_state.button_read_table = False
+    if "df_seed" in st.session_state:
+        del st.session_state["df_seed"]
+        del st.session_state["df_A"]
+        del st.session_state["df_B"]
+    if "compare" in st.session_state:
+        del st.session_state["compare"]
+        del st.session_state["df_compare"]
     st.stop()
 
 sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(uploaded_file)
@@ -376,15 +392,14 @@ with sheets_container:
     button_read = st.button("Read tables")
 
 if button_read:
-    st.session_state["button_read_table"] = True
+    st.session_state.button_read_table = True
     if create_new_seed:
-        st.session_state["create_new_seed"] = True
+        st.session_state.create_new_seed = True
     else:
-        st.session_state["create_new_seed"] = False
-
+        st.session_state.create_new_seed = False
 
 if "button_read_table" in st.session_state:
-    if st.session_state.button_read_table and "df_seed" not in st.session_state:
+    if button_read:
         with read_table_container:
             df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S)
 
@@ -410,6 +425,11 @@ if "df_seed" in st.session_state:
 
         button_generate = st.button("Generate Results")
 
+        if button_generate:
+            st.session_state.button_generate_results = True
+
+if "button_generate_results" in st.session_state:
+    if button_generate:
         generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
 
 st.write(uploaded_file.name)
