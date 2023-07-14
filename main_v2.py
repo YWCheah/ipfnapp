@@ -8,6 +8,7 @@ from ipfn import ipfn
 st.title("Matrix Balancing Tool")
 file_container = st.container()
 sheets_container = st.container()
+read_table_container = st.container()
 table_container = st.container()
 check_field_container = st.container()
 result_container = st.container()
@@ -19,10 +20,9 @@ st.session_state.button_read_table = False
 st.session_state.df_seed = None
 st.session_state.df_A = None
 st.session_state.df_B = None
+st.session_state.button_generate_results = False
 
-
-def get_sheets_and_rows(file):
-    excel_file = pd.ExcelFile(uploaded_file)
+def get_sheets_and_rows(excel_file):
     excel_sheets = excel_file.sheet_names
     with sheets_container:
         col1, col2 = st.columns(2)
@@ -370,13 +370,13 @@ def generate_results(df_seed, aggregates, dimensions, convergence_rate, rate_tol
 
 with file_container:
     st.header("Choose an input file")
-
     uploaded_file = st.file_uploader("Choose an excel file", type="xlsx")
+    excel_file = pd.ExcelFile(uploaded_file)
 
 if uploaded_file is None:
     st.stop()
 
-sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(uploaded_file)
+sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(excel_file)
 
 with sheets_container:
     create_new_seed = st.checkbox("Create new seed table")
@@ -390,7 +390,7 @@ if button_read:
         st.session_state.create_new_seed = False
 
 if st.session_state.button_read_table:
-    with table_container:
+    with read_table_container:
         df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S)
 
         st.session_state["df_seed"] = df_seed
@@ -415,6 +415,9 @@ if st.session_state["df_seed"] is not None and \
     button_generate = st.button("Generate Results")
 
     if button_generate:
-        generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
+        st.session_state.button_generate_results = True
+
+if st.session_state.button_generate_results:
+    generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
 
 st.write(uploaded_file.name)
