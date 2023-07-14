@@ -1,0 +1,270 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 21 15:36:04 2021
+
+@author: CheahY
+"""
+# -*- coding: utf-8 -*-
+
+import streamlit as st
+import pandas as pd
+from ipfn import ipfn
+
+
+@st.cache
+def get_number_of_field(df):
+    i = 0
+    for column in df.columns:
+        if column == "Year":
+            i += 1
+        else:
+            try:
+                pd.to_numeric(df[column])
+                if "Year" in df.columns and i != 0:
+                    break
+                else:
+                    int(column)
+                    break
+            except ValueError:
+                i += 1
+    return i
+
+
+@st.cache
+def rename_industry_column_name(x):
+    if type(x) == str:
+        x = x.strip()
+    if x == "Industry":
+        x = "Industry sector"
+    return x
+
+
+@st.cache
+def drop_unmatch_rows(df_seed, df_A, df_B):
+    for column in df_seed.columns[:-1]:
+        if column in df_A.index.names:
+            df_seed = df_seed[df_seed[column].isin(df_A.index.get_level_values(column).tolist())]
+        elif column in df_B.index.names:
+            df_seed = df_seed[df_seed[column].isin(df_B.index.get_level_values(column).tolist())]
+        elif column == "Year":
+            df_seed = df_seed[df_seed[column].isin(df_A.columns.tolist())]
+
+    df_A = df_A.query("`{}` in {}".format(df_A.index.names, df_seed.index.get_level_values(df_A.index.names).tolist()))
+    df_B = df_B.query("`{}` in {}".format(df_B.index.names, df_seed.index.get_level_values(df_B.index.names).tolist()))
+
+    return df_seed, df_A, df_B
+
+
+@st.cache
+def validate_field_item(df_seed, df_A, df_B):
+    df_compare = pd.DataFrame(columns=["seed", "target_A", "target_B"])
+    compare = True
+
+    for column in df_seed.columns[:-1]:
+        seed_field_item = sorted(df_seed[column].unique().tolist())
+        add_data = pd.DataFrame(data={"seed": seed_field_item}, index=[column])
+
+        if column in df_A.index.names:
+            df_A_field_item = sorted(df_A.index.get_level_values(column).dropna().unique().tolist())
+            if df_A_field_item != seed_field_item:
+                compare = False
+            while len(df_A_field_item) < len(seed_field_item):
+                df_A_field_item.append("")
+            while len(seed_field_item) < len(df_A_field_item):
+                seed_field_item.append("")
+            add_data["target_A"] = df_A_field_item
+
+        if column in df_B.index.names:
+            df_B_field_item = sorted(df_B.index.get_level_values(column).dropna().unique().tolist())
+            if df_B_field_item != seed_field_item:
+                compare = False
+            while len(df_B_field_item) < len(seed_field_item):
+                df_B_field_item.append("")
+            while len(seed_field_item) < len(df_B_field_item):
+                seed_field_item.append("")
+            add_data["target_B"] = df_B_field_item
+
+        df_compare = pd.concat([df_compare, add_data])
+
+    return compare, df_compare
+
+
+@st.cache
+def create_new_seed_table(df_A, df_B, field_name_A, field_name_B):
+    index_names = []
+    list_field_item = []
+
+    for field in field_name_A:
+        list_field_item.append(df_A[field].dropna().unique().tolist())
+        index_names.append(field)
+
+    for field in field_name_B:
+        if field not in field_name_A:
+            list_field_item.append(df_B[field].dropna().unique().tolist())
+            index_names.append(field)
+
+    df_A = df_A.set_index(field_name_A)
+    year_columns = df_A.columns.tolist()
+
+    index = pd.MultiIndex.from_product(list_field_item).set_names(index_names)
+
+    df_seed = pd.DataFrame(index=index, columns=year_columns).fillna(1).reset_index()
+
+    return df_seed
+
+
+def get_sheets_and_rows(file):
+    excel_file = pd.ExcelFile(file)
+    excel_sheets = excel_file.sheet_names
+    col1, col2 = st.columns(2)
+
+    with col1:
+        sheet_A = st.selectbox("Choose the Target A sheet", excel_sheets)
+        sheet_B = st.selectbox("Choose the Target B sheet", excel_sheets)
+        sheet_S = st.selectbox("Choose the SEED sheet", excel_sheets)
+
+    with col2:
+        row_A = st.number_input("Target A table start row", min_value=1, step=1, value=1, key="A")
+        row_B = st.number_input("Target B table start row", min_value=1, step=1, value=1, key="B")
+        row_S = st.number_input("Seed table start row", min_value=1, step=1, value=1, key="S")
+
+    return sheet_A, sheet_B, sheet_S, int(row_A), int(row_B), int(row_S)
+
+
+def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S, create_new_seed):
+    df_A = pd.read_excel(file, sheet_name=sheet_A, skiprows=row_A - 1).dropna(axis=1, how="all").dropna(axis=0, how="all")
+    df_B = pd.read_excel(file, sheet_name=sheet_B, skiprows=row_B - 1).dropna(axis=1, how="all").dropna(axis=0, how="all")
+
+    field_A = get_number_of_field(df_A)
+    field_B = get_number_of_field(df_B)
+
+    df_A.columns = list(map(rename_industry_column_name, df_A.columns))
+    df_B.columns = list(map(rename_industry_column_name, df_B.columns))
+
+    field_name_A = df_A.columns[:field_A].tolist()
+    field_name_B = df_B.columns[:field_B].tolist()
+
+    if not create_new_seed:
+        df_seed = pd.read_excel(file, sheet_name=sheet_S, skiprows=row_S - 1).dropna(axis=1, how="all").dropna(axis=0, how="all")
+    else:
+        df_seed = create_new_seed_table(df_A, df_B, field_name_A, field_name_B)
+        writer = pd.ExcelWriter(file, engine='openpyxl', mode='a', if_sheet_exists='new')
+        df_seed.to_excel(writer, sheet_name='NEW_SEED', engine='openpyxl', index=False)
+        writer.close()
+
+    field_S = get_number_of_field(df_seed)
+    df_seed.columns = list(map(rename_industry_column_name, df_seed.columns))
+    field_name_S = df_seed.columns[:field_S].tolist()
+    field_name = list(set(field_name_S + field_name_A + field_name_B + ["Year"]))
+
+    df_seed = df_seed.set_index(field_name_S)
+    df_A = df_A.set_index(field_name_A)
+    df_B = df_B.set_index(field_name_B)
+
+    df_A.columns.name = "Year"
+    df_B.columns.name = "Year"
+    df_A.columns = pd.to_numeric(df_A.columns)
+    df_B.columns = pd.to_numeric(df_B.columns)
+
+    for field in field_name:
+        if field not in field_name_S:
+            df_seed.columns.name = field
+            field_name_S.append(field)
+            break
+
+    if df_seed.columns.name == "Year":
+        df_seed.columns = pd.to_numeric(df_seed.columns)
+
+    with st.expander("Click here to see table"):
+        st.write("Target A", df_A)
+        st.write("Target B", df_B)
+        st.write("SEED Table", df_seed)
+
+    return df_seed, df_A, df_B
+
+
+def format_result_table(df_result, df_seed_index):
+    if len(df_seed_index) == 3:
+        df_result = df_result.set_index(df_seed_index).unstack(level=2).droplevel(0, axis=1)
+
+        df_grand_total_row = df_result.sum()
+
+        df_subtotal = df_result.groupby([df_seed_index[0]], level=0).sum()
+
+        for x in df_subtotal.index.tolist():
+            df_result.loc[(x, "Total"), :] = df_subtotal.loc[x, :]
+            df_result = df_result.sort_index(level=0)
+
+        if df_result.columns.name != "Year":
+            df_result.insert(0, "Total industry", df_result.sum(axis=1))
+        else:
+            df_result.loc[("Grand Total", "Grand Total"), :] = df_grand_total_row
+
+    else:
+        df_result = df_result.set_index(df_seed_index).unstack(level=-1).droplevel(0, axis=1)
+
+    return df_result
+
+
+def generate_results(df_seed, df_A, df_B):
+    df_seed_index = df_seed.columns.tolist()[0:-1]
+    aggregates = [df_A, df_B]
+    dimensions = [list(df_A.index.names), list(df_B.index.names)]
+
+    convergence_rate = st.number_input("Convergence rate", value=1e-5, step=1e-5, format="%.f", key="conv")
+    rate_tolerance = st.number_input("Tolerance rate", value=1e-8, step=1e-8, format="%.f", key="tol")
+    max_iteration = st.number_input("Maximum iteration", step=1, value=500, key="iter")
+
+    if st.button("Generate Results"):
+        try:
+            IPF = ipfn(df_seed, aggregates, dimensions, weight_col=0, verbose=2,
+                       convergence_rate=convergence_rate, rate_tolerance=rate_tolerance,
+                       max_iteration=max_iteration)
+            df, flag, df_iteration = IPF.iteration()
+
+            iteration = max(df_iteration.index)
+            conv_rate = df_iteration.iat[iteration, 0]
+
+            st.write(f"Number of Iteration: {iteration + 1}")
+            st.write(f"Convergence rate: {conv_rate}")
+
+            with st.spinner("Saving results..."):
+                writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a', if_sheet_exists='new')
+                df = df.rename(columns={0: "Value"})
+                df.to_excel(writer, sheet_name='Results', index=False, engine='openpyxl')
+
+                df_result = format_result_table(df, df_seed_index)
+                df_result.to_excel(writer, sheet_name="Results_formatted", merge_cells=False, engine='openpyxl')
+
+                writer.close()
+
+            st.success("Results saved.")
+
+            if st.download_button("Download Results", uploaded_file, file_name=uploaded_file.name):
+                pass
+
+        except Exception as e:
+            st.exception(e)
+
+
+st.title("Matrix Balancing Tool")
+
+with st.beta_container():
+    st.header("Choose an input file")
+    uploaded_file = st.file_uploader("Choose an excel file", type="xlsx")
+
+if uploaded_file is None:
+    st.stop()
+
+with st.beta_container():
+    sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(uploaded_file)
+    create_new_seed = st.checkbox("Create new seed table")
+    button_read = st.button("Read tables")
+
+if button_read:
+    df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S, create_new_seed)
+
+if df_seed is not None and df_A is not None and df_B is not None:
+    generate_results(df_seed, df_A, df_B)
+
+st.write(uploaded_file.name)
