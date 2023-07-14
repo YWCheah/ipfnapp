@@ -261,6 +261,9 @@ with st.container():
     create_new_seed = st.checkbox("Create new seed table")
     button_read = st.button("Read tables")
 
+df_seed = None
+df_A = None
+df_B = None
 if button_read:
     df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S, create_new_seed)
 
