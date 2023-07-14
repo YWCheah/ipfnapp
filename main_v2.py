@@ -328,7 +328,11 @@ def format_result_table(df_result, df_seed_index):
     return df_result
 
 
-def generate_results(df_seed, df_A, df_B):
+def generate_results():
+
+    df_seed = st.session_state.df_seed
+    df_A = st.session_state.df_A
+    df_B = st.session_state.df_B
     # save the initial seed index for later formatting
     df_seed_index = df_seed.columns.tolist()[0:-1]
 
@@ -412,6 +416,6 @@ if st.session_state.button_read_table:
 
 if st.session_state["df_seed"] is not None and \
         st.session_state["df_A"] is not None and st.session_state["df_B"] is not None:
-    generate_results(st.session_state["df_seed"], st.session_state["df_A"], st.session_state["df_B"])
+    generate_results()
 
 st.write(uploaded_file.name)
