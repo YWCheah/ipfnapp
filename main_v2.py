@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+import random
 import streamlit as st
 import pandas as pd
 from ipfn import ipfn
@@ -328,11 +328,7 @@ def format_result_table(df_result, df_seed_index):
     return df_result
 
 
-def generate_results():
-
-    df_seed = st.session_state.df_seed
-    df_A = st.session_state.df_A
-    df_B = st.session_state.df_B
+def generate_results(df_seed, df_A, df_B):
     # save the initial seed index for later formatting
     df_seed_index = df_seed.columns.tolist()[0:-1]
 
@@ -349,40 +345,40 @@ def generate_results():
         with col3:
             max_iteration = st.number_input("Maximum iteration", step=1, value=500, key="iter")
 
-    if st.button("Generate Results"):
-        try:
-            IPF = ipfn(df_seed, aggregates, dimensions, weight_col=0, verbose=2,
-                       convergence_rate=convergence_rate, rate_tolerance=rate_tolerance,
-                       max_iteration=max_iteration)
-            df, flag, df_iteration = IPF.iteration()
-            st.write(df_seed)
+        if st.button("Generate Results", random.randint(0, 100000)):
+            try:
+                IPF = ipfn(df_seed, aggregates, dimensions, weight_col=0, verbose=2,
+                           convergence_rate=convergence_rate, rate_tolerance=rate_tolerance,
+                           max_iteration=max_iteration)
+                df, flag, df_iteration = IPF.iteration()
+                st.write(df_seed)
 
-            iteration = max(df_iteration.index)
-            conv_rate = df_iteration.iat[iteration, 0]
+                iteration = max(df_iteration.index)
+                conv_rate = df_iteration.iat[iteration, 0]
 
-            st.write(f"Number of Iteration: {iteration + 1}")
-            st.write(f"Convergence rate: {conv_rate}")
+                st.write(f"Number of Iteration: {iteration + 1}")
+                st.write(f"Convergence rate: {conv_rate}")
 
-            with st.spinner("Saving results..."):
+                with st.spinner("Saving results..."):
 
-                writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                        if_sheet_exists='new')
-                df = df.rename(columns={0: "Value"})
-                df.to_excel(writer, sheet_name='Results', index=False, engine='openpyxl')
+                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
+                                            if_sheet_exists='new')
+                    df = df.rename(columns={0: "Value"})
+                    df.to_excel(writer, sheet_name='Results', index=False, engine='openpyxl')
 
-                df_result = format_result_table(df, df_seed_index)
-                df_result.to_excel(writer, sheet_name="Results_formatted", merge_cells=False, engine='openpyxl')
+                    df_result = format_result_table(df, df_seed_index)
+                    df_result.to_excel(writer, sheet_name="Results_formatted", merge_cells=False, engine='openpyxl')
 
-                writer.close()
+                    writer.close()
 
-            st.success("Results saved.")
+                st.success("Results saved.")
 
-            with result_container:
-                if st.download_button("Download Results", uploaded_file, file_name=uploaded_file.name):
-                    pass
+                with result_container:
+                    if st.download_button("Download Results", uploaded_file, file_name=uploaded_file.name):
+                        pass
 
-        except Exception as e:
-            st.exception(e)
+            except Exception as e:
+                st.exception(e)
 
 
 with file_container:
@@ -416,6 +412,6 @@ if st.session_state.button_read_table:
 
 if st.session_state["df_seed"] is not None and \
         st.session_state["df_A"] is not None and st.session_state["df_B"] is not None:
-    generate_results()
+    generate_results(st.session_state["df_seed"], st.session_state["df_A"], st.session_state["df_B"])
 
 st.write(uploaded_file.name)
