@@ -11,6 +11,7 @@ sheets_container = st.container()
 table_container = st.container()
 check_field_container = st.container()
 result_container = st.container()
+download_container = st.container()
 st.session_state.create_new_seed = False
 st.session_state.compare = None
 st.session_state.df_compare = None
@@ -359,7 +360,7 @@ def generate_results(df_seed, aggregates, dimensions, convergence_rate, rate_tol
 
         st.success("Results saved.")
 
-        with result_container:
+        with download_container:
             if st.download_button("Download Results", uploaded_file, file_name=uploaded_file.name):
                 pass
 
