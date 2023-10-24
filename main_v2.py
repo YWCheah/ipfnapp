@@ -357,7 +357,7 @@ def generate_results(df_seed, df_A, df_B):
                 st.write(f"Number of Iteration: {iteration + 1}")
                 st.write(f"Convergence rate: {conv_rate}")
 
-                del df_seed, df_A. df_B
+                del df_seed, df_A, df_B
 
                 with st.spinner("Saving results..."):
 
