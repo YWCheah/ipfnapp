@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
+"""
+Created on Thu Oct 21 15:36:04 2021
 
+@author: CheahY
+"""
 import streamlit as st
 import pandas as pd
 from ipfn import ipfn
@@ -8,23 +12,13 @@ from ipfn import ipfn
 st.title("Matrix Balancing Tool")
 file_container = st.container()
 sheets_container = st.container()
-read_table_container = st.container()
 table_container = st.container()
 check_field_container = st.container()
 result_container = st.container()
-download_container = st.container()
-st.session_state.create_new_seed = False
-st.session_state.compare = None
-st.session_state.df_compare = None
-# st.session_state.button_read_table = False
-# st.session_state.df_seed = None
-# st.session_state.df_A = None
-# st.session_state.df_B = None
-# st.session_state.button_generate_results = False
 
 
 def get_sheets_and_rows(file):
-    excel_file = pd.ExcelFile(file)
+    excel_file = pd.ExcelFile(uploaded_file)
     excel_sheets = excel_file.sheet_names
     with sheets_container:
         col1, col2 = st.columns(2)
@@ -250,27 +244,28 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
             st.write(f"Target B: {' x '.join(field_name_B)} x Year")
             st.write(f"Seed: {' x '.join(field_name_S)}")
 
-            if st.session_state.compare is None:
+            if "compare" not in st.session_state:
                 # check field item of each table
                 compare, df_compare = validate_field_item(df_seed, df_A, df_B)
                 st.session_state["compare"] = compare
                 st.session_state["df_compare"] = df_compare
 
-            # if all the field item is matched then proceed
-            if st.session_state["compare"]:
-                with check_field_container:
-                    st.info("Field items are matched.")
-                writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                        if_sheet_exists='new')
-                st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_OK', engine='openpyxl')
-                writer.close()
             else:
-                with check_field_container:
-                    st.warning("Field item does not match. Please check the file.")
-                writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                        if_sheet_exists='new')
-                st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_NOT_OK', engine='openpyxl')
-                writer.close()
+                # if all the field item is matched then proceed
+                if st.session_state["compare"]:
+                    with check_field_container:
+                        st.info("Field items are matched.")
+                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
+                                            if_sheet_exists='new')
+                    st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_OK', engine='openpyxl')
+                    writer.close()
+                else:
+                    with check_field_container:
+                        st.warning("Field item does not match. Please check the file.")
+                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
+                                            if_sheet_exists='new')
+                    st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_NOT_OK', engine='openpyxl')
+                    writer.close()
 
             # drop unmatch rows
             df_seed, df_A, df_B = drop_unmatch_rows(df_seed, df_A, df_B)
@@ -331,47 +326,64 @@ def format_result_table(df_result, df_seed_index):
     return df_result
 
 
-def generate_results(df_seed, aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration):
+def generate_results(df_seed, df_A, df_B):
     # save the initial seed index for later formatting
     df_seed_index = df_seed.columns.tolist()[0:-1]
 
-    try:
-        IPF = ipfn(df_seed, aggregates, dimensions, weight_col=0, verbose=2,
-                   convergence_rate=convergence_rate, rate_tolerance=rate_tolerance,
-                   max_iteration=max_iteration)
-        df, flag, df_iteration = IPF.iteration()
-        # st.write(df_seed)
+    aggregates = [df_A, df_B]
+    dimensions = [list(df_A.index.names), list(df_B.index.names)]
 
-        iteration = max(df_iteration.index)
-        conv_rate = df_iteration.iat[iteration, 0]
+    with result_container:
+        col1, col2, col3 = st.columns(3)
 
-        st.write(f"Number of Iteration: {iteration + 1}")
-        st.write(f"Convergence rate: {conv_rate}")
+        with col1:
+            convergence_rate = st.number_input("Convergence rate", value=1e-5, step=1e-5, format="%.f", key="conv")
+        with col2:
+            rate_tolerance = st.number_input("Tolerance rate", value=1e-8, step=1e-8, format="%.f", key="tol")
+        with col3:
+            max_iteration = st.number_input("Maximum iteration", step=1, value=500, key="iter")
 
-        with st.spinner("Saving results..."):
+        if st.button("Generate Results"):
+            try:
+                IPF = ipfn(df_seed, aggregates, dimensions, weight_col=0, verbose=2,
+                           convergence_rate=convergence_rate, rate_tolerance=rate_tolerance,
+                           max_iteration=max_iteration)
+                df, flag, df_iteration = IPF.iteration()
+                st.write(df_seed)
 
-            writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                    if_sheet_exists='new')
-            df = df.rename(columns={0: "Value"})
-            df.to_excel(writer, sheet_name='Results', index=False, engine='openpyxl')
+                iteration = max(df_iteration.index)
+                conv_rate = df_iteration.iat[iteration, 0]
 
-            df_result = format_result_table(df, df_seed_index)
-            df_result.to_excel(writer, sheet_name="Results_formatted", merge_cells=False, engine='openpyxl')
+                st.write(f"Number of Iteration: {iteration + 1}")
+                st.write(f"Convergence rate: {conv_rate}")
 
-            writer.close()
+                del df_seed, df_A. df_B
 
-        st.success("Results saved.")
+                with st.spinner("Saving results..."):
 
-        with download_container:
-            if st.download_button("Download Results", uploaded_file, file_name=uploaded_file.name):
-                pass
+                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
+                                            if_sheet_exists='new')
+                    df = df.rename(columns={0: "Value"})
+                    df.to_excel(writer, sheet_name='Results', index=False, engine='openpyxl')
 
-    except Exception as e:
-        st.exception(e)
+                    df_result = format_result_table(df, df_seed_index)
+                    df_result.to_excel(writer, sheet_name="Results_formatted", merge_cells=False, engine='openpyxl')
+
+                    writer.close()
+
+                st.success("Results saved.")
+
+                with result_container:
+                    if st.download_button("Download Results", uploaded_file, file_name=uploaded_file.name):
+                        pass
+
+            except Exception as e:
+                st.exception(e)
 
 
 with file_container:
     st.header("Choose an input file")
+
     uploaded_file = st.file_uploader("Choose an excel file", type="xlsx")
 
 if uploaded_file is None:
@@ -385,6 +397,7 @@ if uploaded_file is None:
         del st.session_state["df_compare"]
     st.stop()
 
+st.session_state.button_read_table = False
 sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(uploaded_file)
 
 with sheets_container:
@@ -398,38 +411,17 @@ if button_read:
     else:
         st.session_state.create_new_seed = False
 
-if "button_read_table" in st.session_state:
-    if button_read:
-        with read_table_container:
-            df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S)
+if st.session_state.button_read_table:
+    with table_container:
+        df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S)
 
-            st.session_state["df_seed"] = df_seed
-            st.session_state["df_A"] = df_A
-            st.session_state["df_B"] = df_B
+        st.session_state["df_seed"] = df_seed
+        st.session_state["df_A"] = df_A
+        st.session_state["df_B"] = df_B
 
 if "df_seed" in st.session_state:
     if st.session_state["df_seed"] is not None and \
             st.session_state["df_A"] is not None and st.session_state["df_B"] is not None:
-        aggregates = [st.session_state["df_A"], st.session_state["df_B"]]
-        dimensions = [list(st.session_state["df_A"].index.names), list(st.session_state["df_B"].index.names)]
+        generate_results(st.session_state["df_seed"], st.session_state["df_A"], st.session_state["df_B"])
 
-        with result_container:
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                convergence_rate = st.number_input("Convergence rate", value=1e-5, step=1e-5, format="%.f", key="conv")
-            with col2:
-                rate_tolerance = st.number_input("Tolerance rate", value=1e-8, step=1e-8, format="%.f", key="tol")
-            with col3:
-                max_iteration = st.number_input("Maximum iteration", step=1, value=500, key="iter")
-
-        button_generate = st.button("Generate Results")
-
-        if button_generate:
-            st.session_state.button_generate_results = True
-
-if "button_generate_results" in st.session_state:
-    if button_generate:
-        generate_results(st.session_state["df_seed"], aggregates, dimensions, convergence_rate, rate_tolerance, max_iteration)
-
-st.write(uploaded_file.name)
+    st.write(uploaded_file.name)
