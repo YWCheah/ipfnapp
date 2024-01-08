@@ -383,6 +383,13 @@ def generate_results(df_seed, df_A, df_B):
                 st.exception(e)
 
 
+def read_button():
+    st.session_state.button_read_table = not st.session_state.button_read_table
+
+
+if 'button_read_table' not in st.session_state:
+    st.session_state.button_read_table = False
+
 with file_container:
     st.header("Choose an input file")
 
@@ -399,19 +406,12 @@ if uploaded_file is None:
         del st.session_state["df_compare"]
     st.stop()
 
-st.session_state.button_read_table = False
+# st.session_state.button_read_table = False
 sheet_A, sheet_B, sheet_S, row_A, row_B, row_S = get_sheets_and_rows(uploaded_file)
 
 with sheets_container:
     create_new_seed = st.checkbox("Create new seed table")
-    button_read = st.button("Read tables")
-
-if button_read:
-    st.session_state.button_read_table = True
-    if create_new_seed:
-        st.session_state.create_new_seed = True
-    else:
-        st.session_state.create_new_seed = False
+    st.button("Read tables", on_click=read_button)
 
 if st.session_state.button_read_table:
     with table_container:
