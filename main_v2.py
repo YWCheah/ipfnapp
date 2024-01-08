@@ -413,6 +413,11 @@ with sheets_container:
     create_new_seed = st.checkbox("Create new seed table")
     st.button("Read tables", on_click=read_button)
 
+if create_new_seed:
+    st.session_state.create_new_seed = True
+else:
+    st.session_state.create_new_seed = False
+
 if st.session_state.button_read_table:
     with table_container:
         df_seed, df_A, df_B = read_table(uploaded_file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S)
