@@ -36,7 +36,7 @@ def get_sheets_and_rows(file):
     return sheet_A, sheet_B, sheet_S, int(row_A), int(row_B), int(row_S)
 
 
-# @st.cache_data
+@st.cache_data
 def get_number_of_field(df):
     i = 0
     for column in df.columns:
@@ -59,7 +59,7 @@ def get_number_of_field(df):
     return i
 
 
-# @st.cache_data
+@st.cache_data
 def rename_industry_column_name(x):
     if type(x) == str:
         x = x.strip()
@@ -80,24 +80,24 @@ def validate_field_name(target_field, seed_field):
     return True
 
 
-# @st.cache_data
+@st.cache_data
 def drop_unmatch_rows(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
 
     for column in df_seed.columns[:-1]:
         if column in df_A.index.names:
-            df_seed = df_seed[df_seed[column].isin(df_A.index.get_level_values(column).tolist())]
+            df_seed = df_seed[df_seed[column].isin(df_A.index.get_level_values(column).unique())]
         elif column in df_B.index.names:
-            df_seed = df_seed[df_seed[column].isin(df_B.index.get_level_values(column).tolist())]
+            df_seed = df_seed[df_seed[column].isin(df_B.index.get_level_values(column).unique())]
         elif column == "Year":
-            df_seed = df_seed[df_seed[column].isin(df_A.columns.tolist())]
+            df_seed = df_seed[df_seed[column].isin(df_A.columns)]
 
     for index in df_A.index.names:
-        df_A = df_A.query(f'`{index}` in {df_seed[index].tolist()}')
+        df_A = df_A[df_A.index.get_level_values(index).isin(df_seed[index].unique())]
 
     for index in df_B.index.names:
-        df_B = df_B.query(f'`{index}` in {df_seed[index].tolist()}')
+        df_B = df_B[df_B.index.get_level_values(index).isin(df_seed[index].unique())]
 
     df_A = df_A.stack()
     df_B = df_B.stack()
@@ -105,45 +105,36 @@ def drop_unmatch_rows(df_seed, df_A, df_B):
     return df_seed, df_A, df_B
 
 
-# @st.cache_data
+@st.cache_data
 def validate_field_item(df_seed, df_A, df_B):
     df_seed = pd.DataFrame(df_seed.stack())
     df_seed = df_seed.reset_index()
 
-    df_compare = pd.DataFrame(columns=["seed", "target_A", "target_B"])
     compare = True
+    dfs_list = []
 
     for column in df_seed.columns[:-1]:
-        add_data = pd.DataFrame()
         seed_field_item = sorted(df_seed[column].unique().tolist())
-        add_data = pd.concat([add_data,
-                              pd.DataFrame(data={"seed": seed_field_item},
-                                           index=[column] * len(seed_field_item))], axis=1)
+        add_data = pd.DataFrame(data={"seed": seed_field_item},
+                                index=[column] * len(seed_field_item))
+        
         if column in df_A.index.names:
             df_A_field_item = sorted(df_A.index.get_level_values(column).dropna().unique().tolist())
             if df_A_field_item != seed_field_item:
                 compare = False
-            while len(df_A_field_item) < len(seed_field_item):
-                df_A_field_item.append("")
-            while len(seed_field_item) < len(df_A_field_item):
-                seed_field_item.append("")
-            add_data = pd.concat([add_data,
-                                  pd.DataFrame(data={"target_A": df_A_field_item},
-                                               index=[column] * len(df_A_field_item))], axis=1)
+            df_A_field_item += [""] * (len(seed_field_item) - len(df_A_field_item))
+            add_data["target_A"] = df_A_field_item[:len(seed_field_item)]
 
         if column in df_B.index.names:
             df_B_field_item = sorted(df_B.index.get_level_values(column).dropna().unique().tolist())
             if df_B_field_item != seed_field_item:
                 compare = False
-            while len(df_B_field_item) < len(seed_field_item):
-                df_B_field_item.append("")
-            while len(seed_field_item) < len(df_B_field_item):
-                seed_field_item.append("")
-            add_data = pd.concat([add_data,
-                                  pd.DataFrame(data={"target_B": df_B_field_item},
-                                               index=[column] * len(df_B_field_item))], axis=1)
+            df_B_field_item += [""] * (len(seed_field_item) - len(df_B_field_item))
+            add_data["target_B"] = df_B_field_item[:len(seed_field_item)]
 
-        df_compare = pd.concat([df_compare, add_data])
+        dfs_list.append(add_data)
+
+    df_compare = pd.concat(dfs_list, ignore_index=False) if dfs_list else pd.DataFrame(columns=["seed", "target_A", "target_B"])
 
     return compare, df_compare
 
@@ -185,8 +176,8 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
     field_B = get_number_of_field(df_B)
 
     # replace "Industry" to "Industry sector" in columns
-    df_A.columns = list(map(lambda name: rename_industry_column_name(name), df_A.columns))
-    df_B.columns = list(map(lambda name: rename_industry_column_name(name), df_B.columns))
+    df_A.columns = df_A.columns.map(rename_industry_column_name)
+    df_B.columns = df_B.columns.map(rename_industry_column_name)
 
     # collect all the field name
     field_name_A = df_A.columns[:field_A].tolist()
@@ -199,16 +190,14 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
 
     else:
         df_seed = create_new_seed_table(df_A, df_B, field_name_A, field_name_B)
-        writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                if_sheet_exists='new')
-        df_seed.to_excel(writer, sheet_name='NEW_SEED', engine='openpyxl', index=False)
-        writer.close()
+        with pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
+            df_seed.to_excel(writer, sheet_name='NEW_SEED', engine='openpyxl', index=False)
         # st.write(df_seed.astype(str))
 
     # get number of field for seed table
     field_S = get_number_of_field(df_seed)
     # replace "Industry" to "Industry sector" in columns for seed table
-    df_seed.columns = list(map(lambda name: rename_industry_column_name(name), df_seed.columns))
+    df_seed.columns = df_seed.columns.map(rename_industry_column_name)
     # collect all the field name for seed table
     field_name_S = df_seed.columns[:field_S].tolist()
     field_name = list(set(field_name_S + field_name_A + field_name_B + ["Year"]))
@@ -255,17 +244,13 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
                 if st.session_state["compare"]:
                     with check_field_container:
                         st.info("Field items are matched.")
-                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                            if_sheet_exists='new')
-                    st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_OK', engine='openpyxl')
-                    writer.close()
+                    with pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
+                        st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_OK', engine='openpyxl')
                 else:
                     with check_field_container:
                         st.warning("Field item does not match. Please check the file.")
-                    writer = pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a',
-                                            if_sheet_exists='new')
-                    st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_NOT_OK', engine='openpyxl')
-                    writer.close()
+                    with pd.ExcelWriter(uploaded_file, engine='openpyxl', mode='a', if_sheet_exists='new') as writer:
+                        st.session_state["df_compare"].to_excel(writer, sheet_name='CHECK_TABLES_NOT_OK', engine='openpyxl')
 
             # drop unmatch rows
             df_seed, df_A, df_B = drop_unmatch_rows(df_seed, df_A, df_B)
@@ -299,7 +284,7 @@ def read_table(file, sheet_A, sheet_B, sheet_S, row_A, row_B, row_S):
             return None, None, None
 
 
-# @st.cache_data
+@st.cache_data
 def format_result_table(df_result, df_seed_index):
     # format result table if N=3
     if len(df_seed_index) == 3:
